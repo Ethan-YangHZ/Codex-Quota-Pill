@@ -19,7 +19,7 @@ public static class QuotaParser
             if (Get(groups, "codex") is { ValueKind: JsonValueKind.Object } standard) bucket = standard;
             else
             {
-                var matches = groups.EnumerateObject().Where(p => Get(p.Value, "limitId")?.GetString() == "codex").ToList();
+                var matches = groups.EnumerateObject().Where(p => Get(p.Value, "limitId") is { ValueKind: JsonValueKind.String } id && id.GetString() == "codex").ToList();
                 if (matches.Count == 1) bucket = matches[0].Value;
             }
         }
@@ -50,6 +50,7 @@ public static class QuotaParser
 }
 public static class QuotaFormatting
 {
+    public static string StatusColor(double? v) => v is null ? "#97A2B2" : v > 50 ? "#9DDBB2" : v >= 20 ? "#E9C781" : v >= 10 ? "#EDA66F" : "#EF7F84";
     public static string Reset(QuotaWindow? window, DateTimeOffset now)
     {
         if (window?.ResetsAt is not { } reset) return "重置 · --";

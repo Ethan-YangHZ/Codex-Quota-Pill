@@ -12,8 +12,8 @@ $sdk = Join-Path $PSScriptRoot '../tools/dotnet/dotnet.exe'
 if (!(Test-Path -LiteralPath $sdk)) { $sdk = (Get-Command dotnet -ErrorAction Stop).Source }
 Push-Location $PSScriptRoot
 try {
-    if ($Test) { & $sdk run --project tests/QuotaPill.Tests -c Release -v quiet }
-    elseif ($Publish) { & $sdk publish src/QuotaPill -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o '../../03_最终交付/Windows-x64' -v quiet }
-    else { & $sdk build src/QuotaPill -c Release -v quiet }
+    if ($Test) { & $sdk run --project tests/QuotaPill.Tests -c Release -p:UseSharedCompilation=false -v quiet }
+    elseif ($Publish) { & $sdk publish src/QuotaPill -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:UseSharedCompilation=false --disable-build-servers -o '../../03_最终交付/Windows-x64' -v quiet }
+    else { & $sdk build src/QuotaPill -c Release -p:UseSharedCompilation=false --disable-build-servers -v quiet }
     if ($LASTEXITCODE -ne 0) { throw "dotnet exited $LASTEXITCODE" }
 } finally { Pop-Location }

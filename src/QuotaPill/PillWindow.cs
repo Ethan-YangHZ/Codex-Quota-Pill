@@ -92,9 +92,7 @@ internal sealed class PillWindow : Window
         System.Windows.Automation.AutomationProperties.SetName(this,
             $"Codex 额度，5 小时剩余 {fiveValue.Text}，每周剩余 {weekValue.Text}，{resetText}，{tip}");
     }
-    static Color ColorFor(double? v) => v is null ? Color.FromRgb(151, 162, 178)
-        : v > 50 ? Color.FromRgb(157, 219, 178) : v >= 20 ? Color.FromRgb(233, 199, 129)
-        : v >= 10 ? Color.FromRgb(237, 166, 111) : Color.FromRgb(239, 127, 132);
+    static Color ColorFor(double? v) => (Color)ColorConverter.ConvertFromString(QuotaFormatting.StatusColor(v));
 
     void ApplyLayout(bool vertical)
     {
@@ -126,6 +124,7 @@ internal sealed class PillWindow : Window
 
     internal void MoveTo(Placement p, bool animate = false)
     {
+        if (animate && animation.IsEnabled && animationTo?.Edge == p.Edge) { animationTo = p; return; }
         animation.Stop();
         bool vertical = p.Edge is DockEdge.Left or DockEdge.Right;
         ApplyLayout(vertical);
@@ -168,7 +167,7 @@ internal sealed class PillWindow : Window
         var area = Native.AreaAt(cursor.X, cursor.Y);
         // Dock proximity always uses the horizontal footprint, independent of the current orientation.
         var p = Docking.Place(cursor.X - offsetX, cursor.Y - offsetY, area);
-        MoveTo(p); e.Handled = true;
+        MoveTo(p, CurrentPlacement?.Edge != p.Edge || animation.IsEnabled); e.Handled = true;
     }
     void EndDrag(object sender, MouseButtonEventArgs e)
     {

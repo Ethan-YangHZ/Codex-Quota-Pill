@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -12,6 +13,9 @@ public static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        bool test = args.Contains("--ui-test");
+        using var mutex = new Mutex(true, test ? "Local\\CodexQuotaPill.UiTest.v1" : "Local\\CodexQuotaPill.v1", out bool firstInstance);
+        if (!firstInstance) return; // No activation, no messages sent to other processes.
         var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
         var window = new PillWindow();
         bool demo = args.Contains("--demo") || args.Contains("--ui-test");
@@ -20,7 +24,8 @@ public static class Program
         window.Show();
         var area = Native.AreaAt(0, 0);
         window.MoveTo(Docking.Place(area.Right - 320 * area.Scale, area.Top + 16 * area.Scale, area));
-        if (args.Contains("--ui-test"))
+        AppLifetime? lifetime = null;
+        if (test)
         {
             string output = System.IO.Path.Combine(AppContext.BaseDirectory, "artifacts"); Directory.CreateDirectory(output);
             int step = 0; var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
@@ -44,6 +49,33 @@ public static class Program
             };
             timer.Start();
         }
+        else
+        {
+            lifetime = new AppLifetime(window, demo);
+            app.Dispatcher.BeginInvoke(new Action(async () => await lifetime.Start()));
+            if (args.Contains("--integration-test"))
+            {
+                var smoke = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+                smoke.Tick += async (_, _) =>
+                {
+                    smoke.Stop();
+                    bool wasVisible = window.IsVisible;
+                    window.Hide(); bool hidden = !window.IsVisible;
+                    window.Show();
+                    await lifetime.RefreshForTest();
+                    string output = System.IO.Path.Combine(AppContext.BaseDirectory, "artifacts"); Directory.CreateDirectory(output);
+                    window.SaveRender(System.IO.Path.Combine(output, "unavailable.png"));
+                    File.WriteAllText(System.IO.Path.Combine(output, "integration-test.json"), JsonSerializer.Serialize(new
+                    { focusPreserved = Native.GetForegroundWindow() == before, wasVisible, hidden, shown = window.IsVisible,
+                        tooltip = window.ToolTip?.ToString(), position = window.CurrentPlacement,
+                        transportMode = "SafetyBlockedSource (no real transport configured)" }, new JsonSerializerOptions { WriteIndented = true }));
+                    window.Close();
+                };
+                smoke.Start();
+            }
+        }
         app.Run(window);
+        lifetime?.Dispose();
+        mutex.ReleaseMutex();
     }
 }
