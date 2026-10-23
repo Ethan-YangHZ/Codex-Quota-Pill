@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings><Nullable>enable</Nullable>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>CodexQuotaPill</AssemblyName><Version>0.1.0</Version>
+    <StartupObject>QuotaPill.Program</StartupObject><NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+</Project>
